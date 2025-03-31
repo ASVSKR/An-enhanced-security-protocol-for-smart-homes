@@ -66,7 +66,7 @@ def gatewayStore(uniqueId, encryptedsecret, usershare, hdf5_filename="DB/gateway
 def lastlogin(uniqueID, lastlogin, hdf5_filename="DB/lastlogin.hdf5"):
     with h5py.File(hdf5_filename, "a") as f:
         if uniqueID in f:
-            f[uniqueID]["lastLogin"] = np.string_(lastlogin)
+            f[uniqueID]["lastLogin"] = np.bytes_(lastlogin)
             print(f"✅ lastLogin for {uniqueID} updated to {lastlogin}")
         else:
             group = f.create_group(uniqueID)
@@ -151,3 +151,7 @@ def GetNewDeviceID(device_data):
 import sympy
 def primeNumbergenerator():
     return sympy.randprime(0, 100)
+
+def xor_strings(s1, s2):
+    # Convert each character to its ASCII value, perform XOR, and convert back to character
+    return ''.join(chr(ord(c1) ^ ord(c2)) for c1, c2 in zip(s1, s2))

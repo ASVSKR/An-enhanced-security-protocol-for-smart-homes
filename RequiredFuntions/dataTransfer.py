@@ -19,7 +19,7 @@ def send(data):
     print("Data transfer done.")
 
 # Function to receive data and save it to a JSON file
-def receive():
+def receive(filename='received_data.json'):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ('localhost', 12345)
     s.bind(server_address)
@@ -40,7 +40,7 @@ def receive():
     received_data = json.loads(data_json)
 
     # Save the received data to a JSON file
-    with open('./ReceivedData/received_data.json', 'w') as json_file:
+    with open(f'./ReceivedData/{filename}', 'w') as json_file:
         json.dump(received_data, json_file, indent=4)  # Format the JSON for readability
 
     print("Received data saved to 'received_data.json'.")
