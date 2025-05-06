@@ -1,10 +1,9 @@
 import hashlib
-import random
 import h5py
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import os
-import EncryptionDecryption as ED
+import secrets
 
 # caliculating the hash of a file
 
@@ -16,7 +15,7 @@ def hash_file(file_path):
     return hashlib.sha256(data).hexdigest()
     
 def nonce_gen():
-    nonce = random.randint(1,1000)
+    nonce = secrets.randbelow(1001)
     return nonce
 
 import json
@@ -79,8 +78,8 @@ def AddNewDevice(trainingID, uniqueID , hdf5_filename="DB/DeviceList.hdf5"):
         if trainingID_str in f:
             return "duplicate trainingID"
         group = f.create_group(trainingID_str)
-        hashed_id = hashlib.sha256(uniqueID.encode()).hexdigest()  # Encode before hashing
-        group.create_dataset("uniqueID", data=np.bytes_(hashed_id.encode()))  # Store hashed unique ID as bytes
+        id = uniqueID  # Encode before hashing
+        group.create_dataset("uniqueID", data=np.bytes_(id.encode()))  # Store hashed unique ID as bytes
     print(f"🎯 Encrypted Data Saved for Training ID `{trainingID}` in {hdf5_filename}")
     return "success"
 
@@ -155,3 +154,26 @@ def primeNumbergenerator():
 def xor_strings(s1, s2):
     # Convert each character to its ASCII value, perform XOR, and convert back to character
     return ''.join(chr(ord(c1) ^ ord(c2)) for c1, c2 in zip(s1, s2))
+
+def display_image_from_bytes(image_bytes):
+    # Convert bytes to a NumPy array
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    # Decode the image from the array
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        print("Failed to decode image.")
+        return
+    # Convert from BGR (OpenCV's default) to RGB for matplotlib
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # Display the image using matplotlib
+    plt.imshow(img_rgb)
+    plt.axis('off')
+    plt.title("Image from Bytes (OpenCV)")
+    plt.show()
+
+    return img_rgb
+
+def image_file_to_bytes(file_path: str) -> bytes:
+    with open(file_path, 'rb') as file:
+        return file.read()
+

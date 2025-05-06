@@ -1,4 +1,5 @@
 import numpy as np
+import statistics
 import pandas as pd
 from scipy.stats import skew, kurtosis
 from scipy.fftpack import fft
@@ -97,3 +98,42 @@ def AccelerometerTraining(inputdataset):
     joblib.dump(scaler, "./Model/Accelerometer/scaler.pkl")
 
     print("Models Saved Successfully!")
+
+def modelTesting(file_path, model_path):
+    test_df = pd.read_csv(file_path)
+    X_test_raw = test_df[['X', 'Y', 'Z']].values  # Extract raw sensor values
+    # Apply flat static state detection (Optional)
+    static_indices_test = detect_flat_static_state_windowed(X_test_raw, window_size=50, threshold=0.2)
+
+    # If filtering removes all samples, use the raw dataset
+    if len(static_indices_test) == 0:
+        print("⚠ Warning: No stationary test data found! Using raw test data instead.")
+        X_test_filtered = X_test_raw
+    else:
+        X_test_filtered = X_test_raw[static_indices_test]
+
+        # Apply feature extraction
+    X_test_features = np.array([extract_20_features(sample) for sample in X_test_filtered])
+
+    # Load Pre-Trained Scaler and Normalize Test Features
+    scaler_loaded = joblib.load(f"{model_path}/scaler.pkl")
+    X_test_scaled = scaler_loaded.transform(X_test_features)
+    # Load Trained Models
+    one_class_loaded = joblib.load(f"{model_path}/one_class_svm.pkl")  # For Unknown Device Detection
+    multi_class_loaded = joblib.load(f"{model_path}/multi_class_rf.pkl")  # For Known Device Classification
+
+    # One-Class Prediction (Detect Unknown Devices)
+    y_pred_one_class = one_class_loaded.predict(X_test_scaled)
+    y_pred_one_class = ['Unknown' if pred == -1 else 'Known' for pred in y_pred_one_class]
+
+    # Multi-Class Prediction (Identify Known Devices)
+    y_pred_multi_class = multi_class_loaded.predict(X_test_scaled)
+
+    # Convert Predictions to DataFrame
+    output_df = pd.DataFrame({
+        'Predicted_Device': y_pred_multi_class,
+        'Device_Status': y_pred_one_class
+    })
+
+    return statistics.mode(output_df["Predicted_Device"]), output_df["Device_Status"].value_counts()
+        
